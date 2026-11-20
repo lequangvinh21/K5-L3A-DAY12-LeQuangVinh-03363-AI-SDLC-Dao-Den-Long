@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import manifest from '../game.contract.json';
-import {Night,islandRadius} from './core.js';
+import {maps,ground} from './maps.js';
+import {cue,music,unlock,setVolume} from './sound.js';
+import {Night} from './core.js';
 
 const $ = selector => document.querySelector(selector);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x555074);
-scene.fog = new THREE.FogExp2(0x494662,.013);
+scene.background = new THREE.Color(0x0e1430);
+scene.fog = new THREE.FogExp2(0x1b2350,.013);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 $('#world').append(renderer.domElement);
@@ -29,54 +31,61 @@ function shape(parent,geo,mat,x=0,y=0,z=0) {
 }
 function cylinder(top,bottom,height,sides=12) { return new THREE.CylinderGeometry(top,bottom,height,sides); }
 const sphere = new THREE.IcosahedronGeometry(1,1);
-const wood = material(0x724b48), gold = material(0xffcf72,true);
-shape(scene,cylinder(islandRadius+0.1,29,6,80),material(0x625b67),0,-3.24);
-shape(scene,cylinder(islandRadius+.15,islandRadius+.15,.26,80),material(0x385455),0,-.13);
-const tuft = new THREE.ConeGeometry(.14,.45,3);
-const grass = new THREE.InstancedMesh(tuft,material(0x557363),520);
-const placement = new THREE.Object3D();
-for(let i=0;i<grass.count;i++){
-  const angle=i*2.39996, r=33*Math.sqrt(i/grass.count);
-  placement.position.set(r*Math.cos(angle),.18,r*Math.sin(angle));
-  placement.rotation.z=.25*Math.sin(i);placement.updateMatrix();grass.setMatrixAt(i,placement.matrix);
-}
-scene.add(grass);
+const wood = material(0x6b4a2f), gold = material(0xfff6c2,true);
 const haloCanvas=document.createElement('canvas');
 haloCanvas.width=haloCanvas.height=64;
 const brush=haloCanvas.getContext('2d');
 const glow=brush.createRadialGradient(32,32,0,32,32,32);
-glow.addColorStop(0,'rgba(255,231,155,.95)');glow.addColorStop(.24,'rgba(255,184,80,.5)');glow.addColorStop(1,'rgba(255,160,50,0)');
+glow.addColorStop(0,'rgba(255,229,138,.95)');glow.addColorStop(.24,'rgba(255,229,138,.5)');glow.addColorStop(1,'rgba(255,160,50,0)');
 brush.fillStyle=glow;brush.fillRect(0,0,64,64);
 const haloMat=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(haloCanvas),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
 function halo(parent,size,y=0){
   const sprite=new THREE.Sprite(haloMat);sprite.scale.setScalar(size);sprite.position.y=y;parent.add(sprite);return sprite;
 }
-const cloudMat = material(0xc9bace);
-for(let i=0;i<80;i++){
-  const a=i*2.39996, r=42+(i%9)*4;
-  const cloud=shape(scene,sphere,cloudMat,r*Math.cos(a),-5-i%4,r*Math.sin(a));
-  cloud.scale.set(8+i%5,3+i%3,8);
-}
-for(let i=0;i<28;i++){
-  const a=i*2.39996,r=30+i%3,x=r*Math.cos(a),z=r*Math.sin(a);
-  shape(scene,cylinder(.24,.4,2),wood,x,1,z);
-  shape(scene,new THREE.ConeGeometry(1.8,3.5,7),material(i%2?0x485e62:0x516f69),x,3,z);
+let terrain;
+function landscape(n){
+  if(terrain){scene.remove(terrain);terrain.traverse(o=>o.geometry?.dispose());}
+  terrain=new THREE.Group();scene.add(terrain);
+  const land=material(0x2f5d50),sand=material(0xc9b48a),sea=material(0x12384a);
+  for(const [x,r] of maps[n].islands){
+    shape(terrain,cylinder(r,r-3,3,72),sand,x,-1.65);
+    shape(terrain,cylinder(r,r,.2,72),land,x,-.1);
+    for(let i=0;i<10;i++){
+      const a=i*2.39996;
+      const cloud=shape(terrain,new THREE.IcosahedronGeometry(1),sea,x+(r+5)*Math.cos(a),-4,(r+5)*Math.sin(a));
+      cloud.scale.set(8,3,7);
+    }
+  }
+  if(n===2) shape(terrain,new THREE.BoxGeometry(18,.25,4),wood,35,-.12,0);
+  if(n===3){
+    const outline=new THREE.Shape();outline.absarc(0,0,24,0,Math.PI,false);outline.absarc(0,0,12,Math.PI,0,true);outline.closePath();
+    const shelf=shape(terrain,new THREE.ExtrudeGeometry(outline,{depth:3,bevelEnabled:false,curveSegments:48}),land,0,3,0);
+    shelf.rotation.x=Math.PI/2;
+    shape(terrain,cylinder(8,8,6,64),land,0,3,0);shape(terrain,cylinder(2,2,8,24),wood,0,10,0);
+    for(const a of [Math.PI/6,5*Math.PI/6]){
+      const group=new THREE.Group();terrain.add(group);group.rotation.y=-a;group.position.set(27*Math.cos(a),1.4,27*Math.sin(a));
+      shape(group,new THREE.BoxGeometry(Math.hypot(6,3),.2,3),sand).rotation.z=-Math.atan(.5);
+    }
+  }
+  for(const [x,y,z] of maps[n].pads)shape(terrain,cylinder(1,1,.12),material(0xf2c14e),x,y+.06,z);
 }
 const hero = new THREE.Group();scene.add(hero);
-shape(hero,cylinder(.5,.78,1.2),material(0xd97c4e),0,.75);
+shape(hero,cylinder(.5,.78,1.2),material(0xe8e2d0),0,.75);
 shape(hero,sphere,material(0xe5bc92),0,1.65).scale.setScalar(.46);
 shape(hero,new THREE.ConeGeometry(.98,.65,16),material(0xe8bb79),0,2.13);
 shape(hero,cylinder(.025,.025,.5),wood,.66,1.73);
 shape(hero,sphere,gold,.83,1.39).scale.set(.17,.23,.17);
 halo(hero,1.3,1.39).position.x=.83;
+shape(hero,cylinder(.54,.56,.19),material(0xc8102e),0,1.37);
 const lanternNodes = new Map(), moteNodes = new Map(), shadeNodes = new Map();
-const dormant = material(0x897987),paper = material(0xffb34e,true);
+const dormant = material(0x5b5f6e),paper = material(0xffb347,true);
 function lamp() {
   const group = new THREE.Group();scene.add(group);
   shape(group,cylinder(.65,.9,.3),wood,0,.15);
   shape(group,cylinder(.12,.19,2.4),wood,0,1.4);
   group.userData.paper = shape(group,cylinder(.65,.55,1,8),dormant,0,2.8);
   group.userData.glow=halo(group,5,2.8);
+  shape(group,sphere,material(0xffe9b0,true),0,2.8).scale.setScalar(.16);
   shape(group,new THREE.ConeGeometry(.94,.56,8),wood,0,3.55);
   return group;
 }
@@ -90,70 +99,104 @@ function sync(objects,nodes,create,update) {
   }
   for(const [id,node] of nodes) if(!ids.has(id)){scene.remove(node);nodes.delete(id);}
 }
-const keys = new Set(), actions = new Set();
-const bindings = {Space:'jump',KeyE:'interact',KeyF:'pulse'};
-let game, yaw, accumulator, last, message, until, pulseAt;
-const ring = shape(scene,new THREE.TorusGeometry(1,.025,6,80),gold);
-ring.rotation.x=Math.PI/2;
-function restart() {
-  game=new Night(manifest.tuning,Math.floor(Math.random()*4294967296));
-  yaw=0;accumulator=0;last=performance.now();until=210;message='Nhặt đom đóm vàng và mang về năm đèn lớn.';pulseAt=-100;
-  keys.clear();actions.clear();if($('dialog').open) $('dialog').close();
+const keys=new Set(),actions=new Set(),drifterNodes=new Map(),charmNodes=new Map();
+const bindings={Space:'jump',KeyE:'interact',KeyF:'pulse',ShiftLeft:'dash',ShiftRight:'dash'};
+let game,yaw=0,accumulator=0,last=performance.now(),pulseAt=-100,screen,total=0;
+let sensitivity=Number(localStorage.getItem('lantern-sensitivity')??1);
+let volume=Number(localStorage.getItem('lantern-volume')??.45);setVolume(volume);
+const ring=shape(scene,new THREE.TorusGeometry(1,.035,6,72),gold);ring.rotation.x=Math.PI/2;
+const dialog=$('dialog');
+function panel(id,label,title,description,buttons){
+  screen=id;keys.clear();actions.clear();$('#eyebrow').textContent=label;$('h1').textContent=title;
+  $('dialog p').textContent=description;$('#controls').replaceChildren();$('#buttons').replaceChildren();
+  for(const [caption,action] of buttons){
+    const b=document.createElement('button');b.textContent=caption;b.onclick=action;$('#buttons').append(b);
+  }
+  if(!dialog.open)dialog.showModal();
 }
-$('button').onclick=restart;
-window.addEventListener('keydown',e=>{
-  if($('dialog').open || !['KeyW','KeyS','KeyA','KeyD','KeyQ','KeyR',...Object.keys(bindings)].includes(e.code))return;
-  e.preventDefault();keys.add(e.code);if(!e.repeat && bindings[e.code])actions.add(bindings[e.code]);
-});
-window.addEventListener('keyup',e=>keys.delete(e.code));
-window.addEventListener('blur',()=>{keys.clear();actions.clear();});
-function step() {
-  yaw+=(Number(keys.has('KeyQ'))-Number(keys.has('KeyR')))*1.5;
-  const frame={move:[Number(keys.has('KeyA'))-Number(keys.has('KeyD')),Number(keys.has('KeyW'))-Number(keys.has('KeyS'))],
-    cam_yaw_deg:yaw};
-  for(const action of Object.values(bindings)) frame[action]=actions.has(action);
-  actions.clear();
-  for(const e of game.step(frame)){
-    if(e.name==='pulse') pulseAt=game.tick;
-    if(e.name==='player_hit'||e.name==='lantern_lit'){
-      message=e.name==='player_hit'?'Bóng Mực chạm Mây · mất một ngọn lửa':'Đèn đã sáng · vùng sáng bảo vệ Mây';
-      until=game.tick+100;
-    }
-    if(e.name==='game_over'){
-      $('h2').textContent=game.state==='won'?'Đảo Bến bừng sáng':'Đêm đã khép lại';
-      $('dialog p').textContent=({all_lit:'Cả năm đèn đã sáng',dawn:'Bình minh đã đến',no_flames:'Mây đã cạn lửa'})[e.data.reason]+' · '+game.score+' điểm';
-      $('dialog').showModal();
-    }
+function start(n){
+  game=new Night(manifest.tuning,Math.floor(Math.random()*4294967296),{},n);
+  landscape(n);yaw=0;pulseAt=-100;last=performance.now();accumulator=0;
+}
+function intro(n){
+  start(n);const words=['Mang đốm sáng về cho những chiếc đèn, Mây nhé.','Qua cầu tre, con sẽ tìm thấy bùa gió.','Theo dốc lên tháp chuông trước khi trời sáng.'];
+  panel('intro','ÔNG ĐĂNG · ĐÊM '+n,maps[n].name,words[n-1],[['Vào đảo',()=>{unlock();screen='play';dialog.close();}]]);
+}
+function menu(){panel('menu','BIỂN MÂY · BA HÒN ĐẢO','Đảo Đèn Lồng','Cùng Mây thắp lại ánh sáng qua ba đêm giữa biển mây.',[['Bắt đầu',()=>{total=0;intro(1);}],['Cài đặt',()=>settings(menu)]]);}
+function togglePause(){
+  game.step({pause:false});game.step({pause:true});
+}
+function resume(){togglePause();screen='play';dialog.close();}
+function pauseMenu(){panel('pause','ĐÊM '+game.night,'Tạm dừng',maps[game.night].name,[['Tiếp tục',resume],['Chơi lại Đêm',()=>intro(game.night)],['Cài đặt',()=>settings(pauseMenu)],['Về menu',menu]]);}
+function settings(back){
+  panel('settings','TÙY CHỌN','Cài đặt','Kéo chuột trên đảo để xoay góc nhìn.',[['Trở về',back]]);
+  for(const [name,key,min,max,value,apply] of [['Âm lượng','volume',0,1,volume,v=>setVolume(volume=v)],['Độ nhạy chuột','sensitivity',.2,3,sensitivity,v=>sensitivity=v]]){
+    const label=document.createElement('label'),input=document.createElement('input');label.textContent=name;
+    input.type='range';input.min=min;input.max=max;input.step=.05;input.value=value;
+    input.oninput=()=>{apply(+input.value);localStorage.setItem('lantern-'+key,input.value);};label.append(input);$('#controls').append(label);
   }
 }
-const shadow=material(0x33304d), stunned=material(0xbfa7e6);
-function draw(now) {
+dialog.addEventListener('cancel',e=>{e.preventDefault();if(screen==='pause')resume();});
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'||e.code==='Escape'){
+    if(e.repeat)return;e.preventDefault();
+    if(screen==='play'){game.step({pause:true});pauseMenu();}else if(screen==='pause')resume();return;
+  }
+  if(screen!=='play')return;
+  if(bindings[e.code]||['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyR'].includes(e.code)){e.preventDefault();keys.add(e.code);if(!e.repeat&&bindings[e.code])actions.add(bindings[e.code]);}
+});
+window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();actions.clear();});
+renderer.domElement.addEventListener('pointermove',e=>{if(e.buttons===1&&screen==='play')yaw-=e.movementX*.25*sensitivity;});
+function step(){
+  yaw+=(Number(keys.has('KeyQ'))-Number(keys.has('KeyR')))*1.5;
+  const frame={move:[Number(keys.has('KeyA'))-Number(keys.has('KeyD')),Number(keys.has('KeyW'))-Number(keys.has('KeyS'))],cam_yaw_deg:yaw,pause:false};
+  for(const action of Object.values(bindings))frame[action]=actions.has(action);
+  if(frame.jump&&game.player.grounded)cue('jump');actions.clear();
+  for(const e of game.step(frame)){
+    cue(e.name);if(e.name==='pulse')pulseAt=game.sim;
+    if(e.name==='game_over'){
+      cue(game.state);const n=game.night,won=game.state==='won';if(won)total+=game.score;
+      panel('result','ĐÊM '+n+' · '+maps[n].name,won?(n===3?'Bình Minh':'Đảo đã sáng'):'Đêm đã khép lại',
+        'Điểm Đêm '+game.score+' · Tổng điểm '+total,[[won?(n===3?'Về menu':'Đêm kế tiếp'):'Chơi lại Đêm',()=>won&&n===3?menu():intro(won?n+1:n)]]);
+    }
+  }
+  if(game.sim%90===1)music();
+  if(game.timeLeft<=10&&game.sim%60===0)cue('count');
+  if(game.night===3&&game.sim%1800===1680)cue('wind');
+}
+const shadow=material(0x120a1a),stunned=material(0x3a3450),silk=material(0x8fa3b8),red=material(0xc8102e),trim=material(0xf2c14e);
+const leaves=new THREE.Group();scene.add(leaves);
+for(let i=0;i<12;i++){const leaf=shape(leaves,sphere,trim);leaf.scale.set(.22,.04,.08);}
+function draw(now){
   accumulator+=Math.min((now-last)/1000,.2);last=now;
-  while(accumulator>=1/60){if(game.state==='playing')step();accumulator-=1/60;}
-  const [x,y,z]=game.player.pos;
-  hero.position.set(x,y,z);
-  const a=yaw*Math.PI/180;
-  camera.position.set(x-13*Math.sin(a),y+10,z-13*Math.cos(a));
-  camera.lookAt(x+2*Math.sin(a),y+1,z+2*Math.cos(a));
+  while(accumulator>=1/60){if(screen==='play')step();accumulator-=1/60;}
+  const p=game.player,[x,y,z]=p.pos,a=yaw*Math.PI/180;
+  hero.position.set(x,y,z);hero.rotation.y=Math.atan2(game.face[0],game.face[1]);
+  camera.position.set(x-13*Math.sin(a),y+10,z-13*Math.cos(a));camera.lookAt(x+2*Math.sin(a),y+1,z+2*Math.cos(a));camera.updateMatrixWorld();
   sync(game.lanterns,lanternNodes,lamp,(node,l)=>{node.userData.paper.material=l.lit?paper:dormant;node.userData.glow.visible=l.lit;});
   sync(game.motes,moteNodes,()=>{const node=shape(scene,sphere,gold);halo(node,8);return node;},(node,m)=>{
-    node.position.y+=.8+.18*Math.sin(now/400+Number(m.id.slice(1)));node.scale.setScalar(.22);
+    node.position.y+=.8+.16*Math.sin(game.sim/24+Number(m.id.slice(1)));node.scale.setScalar(.22);
   });
-  sync(game.shades,shadeNodes,()=>shape(scene,sphere,shadow),(node,s)=>{
-    node.position.y+=.3*Math.sin(now/500);node.scale.set(.85,1.1,.85);node.material=s.state==='stunned'?stunned:shadow;
+  sync(game.shades,shadeNodes,()=>{const node=shape(scene,sphere,shadow);const edge=shape(node,sphere,material(0x7a3cff));edge.scale.setScalar(1.06);edge.material.side=THREE.BackSide;return node;},(node,s)=>{
+    node.scale.set(.85,1,.85);node.material=s.state==='stunned'?stunned:shadow;
   });
-  ring.visible=game.tick-pulseAt<26;
-  ring.position.set(x,.2,z);ring.scale.setScalar(.1+manifest.tuning.pulse_radius*Math.min(1,(game.tick-pulseAt)/25));
+  sync(game.drifters,drifterNodes,()=>shape(scene,sphere,silk),node=>{node.scale.set(1.1,.18,.4);node.position.y+=1;});
+  sync(game.charms,charmNodes,()=>{const node=shape(scene,new THREE.BoxGeometry(.6,.85,.12),trim);shape(node,new THREE.BoxGeometry(.51,.76,.15),red);return node;},(node,c)=>{node.visible=!c.left;node.position.y+=.7;});
+  leaves.visible=game.night===3&&(game.sim%1800>=1680||game.wind.active);
+  if(leaves.visible)leaves.children.forEach((leaf,i)=>leaf.position.set(x+(game.sim/10+i*2)%12-6,y+1+i%3,z+i%5-2));
+  ring.visible=game.sim-pulseAt<20;ring.position.set(x,y+.2,z);ring.scale.setScalar(.1+5*Math.min(1,(game.sim-pulseAt)/20));
   const lit=game.lanterns.filter(l=>l.lit).length;
-  sky.intensity=.95+lit*.30;scene.background.setHSL(.70,.23,.19+.035*lit);
-  const seconds=Math.ceil(game.timeLeft);
-  $('#clock').textContent=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
-  $('#points').textContent=game.score+' điểm';
-  $('#bag').textContent=game.player.carried+' / '+manifest.tuning.carry_capacity+' đom đóm';
-  $('#life').textContent='♥'.repeat(game.player.flames);
-  $('#lights').textContent=game.lanterns.map(l=>l.lit?'◆':'◇').join(' ')+'  '+lit+'/5';
-  const near=game.lanterns.find(l=>!l.lit && Math.hypot(l.pos[0]-x,l.pos[2]-z)<=manifest.tuning.interact_radius);
-  $('#hint').textContent=near?'E · Nạp đèn '+near.id+' ('+near.deposited+'/'+manifest.tuning.lantern_cost+')':game.tick<until?message:'';
+  sky.intensity=.15+.55*lit/game.lanterns.length;
+  $('#night').textContent='ĐÊM 0'+game.night+' · '+maps[game.night].name;$('#life').textContent='♥'.repeat(p.flames);
+  const secs=Math.ceil(game.timeLeft);$('#clock').textContent=Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');$('#clock').classList.toggle('danger',secs<=30);
+  $('#points').textContent=game.score+' điểm';$('#lights').textContent='◆ '+lit+'/'+game.lanterns.length;
+  $('#bag').textContent='▰'.repeat(p.carried)+'▱'.repeat(10-p.carried);
+  $('#cool').textContent='⇢ Lướt '+(p.dc&&!p.charm?(p.dc/60).toFixed(1)+'s':'✓')+'　✧ Tỏa sáng '+(p.pc?(p.pc/60).toFixed(1)+'s':'✓');
+  const nearest=game.lanterns.filter(l=>!l.lit).sort((l,r)=>Math.hypot(l.pos[0]-x,l.pos[2]-z)-Math.hypot(r.pos[0]-x,r.pos[2]-z))[0];
+  $('#hint').textContent=nearest&&Math.hypot(nearest.pos[0]-x,nearest.pos[2]-z)<=2?'E — Nạp ánh sáng ('+nearest.deposited+'/10)':p.charm?'Bùa Gió · '+Math.ceil(p.charm/60)+'s':'';
+  const arrow=$('#arrow');arrow.textContent='';
+  if(nearest){const v=new THREE.Vector3(...nearest.pos).project(camera);
+    if(Math.abs(v.x)>1||Math.abs(v.y)>1||v.z>1){arrow.textContent='➤ '+nearest.id;arrow.style.transform='rotate('+Math.atan2(-v.y*(v.z>1?-1:1),v.x*(v.z>1?-1:1))+'rad)';}}
   renderer.render(scene,camera);requestAnimationFrame(draw);
 }
-restart();requestAnimationFrame(draw);
+start(1);menu();requestAnimationFrame(draw);

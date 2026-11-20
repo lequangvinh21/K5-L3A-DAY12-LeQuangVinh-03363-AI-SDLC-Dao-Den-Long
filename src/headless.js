@@ -9,20 +9,23 @@ const bool = v => typeof v === 'boolean';
 const optional = (o,k,test) => !(k in o) || test(o[k]);
 const list = test => a => Array.isArray(a) && a.every(test);
 const unique = (a,key) => new Set(a.map(o => o[key])).size === a.length;
-function scenario(s) {
+function scenario(s,night) {
   return object(s) && optional(s,'player',p => object(p) && optional(p,'pos',v => vector(v,3)) &&
-    optional(p,'carried',uint) && optional(p,'flames',uint)) &&
+    optional(p,'carried',uint) && optional(p,'flames',uint) && ['invuln_ticks','dash_cd_ticks','pulse_cd_ticks','charm_ticks'].every(k=>optional(p,k,uint))) &&
     optional(s,'time_left_s',v => Number.isFinite(v) && v >= 0) &&
+    ['random_drifters','wind_enabled'].every(k=>optional(s,k,bool)) &&
+    optional(s,'drifters',list(o=>object(o)&&vector(o.pos,3)&&optional(o,'state',v=>['idle','chase','flee'].includes(v))&&optional(o,'stolen',uint)&&optional(o,'state_ticks_left',uint))) &&
+    optional(s,'charms',list(o=>object(o)&&optional(o,'pos',v=>vector(v,3))&&optional(o,'available',bool)&&optional(o,'respawn_ticks',uint))) &&
     optional(s,'random_motes',bool) && optional(s,'random_shades',bool) &&
     optional(s,'motes',list(v => vector(v,3))) &&
-    optional(s,'shades',a => list(o => object(o) && vector(o.pos,3) && optional(o,'id',v => typeof v === 'string' && v.length > 0))(a) && unique(a.filter(s => s.id),'id')) &&
-    optional(s,'lanterns',a => list(o => object(o) && /^L[1-5]$/.test(o.id) && optional(o,'pos',v => vector(v,3)) &&
+    optional(s,'shades',a => list(o => object(o) && vector(o.pos,3) && optional(o,'state',v=>['spawning','wander','chase','recoil','stunned'].includes(v)) && optional(o,'state_ticks_left',uint) && optional(o,'id',v => typeof v === 'string' && v.length > 0))(a) && unique(a.filter(s => s.id),'id')) &&
+    optional(s,'lanterns',a => list(o => object(o) && /^L[1-7]$/.test(o.id) && Number(o.id.slice(1))<=night+4 && optional(o,'pos',v => vector(v,3)) &&
       optional(o,'lit',bool) && optional(o,'deposited',v => uint(v) && v <= tuning.lantern_cost))(a) && unique(a,'id'));
 }
 function inputs(o) {
   return object(o) && Array.isArray(o.frames) && o.frames.every((f,i) => object(f) && uint(f.tick) &&
     (!i || f.tick > o.frames[i-1].tick) && optional(f,'move',v => vector(v,2) && v.every(n => Math.abs(n)<=1)) &&
-    optional(f,'cam_yaw_deg',Number.isFinite) && ['jump','interact','pulse','dash'].every(k => optional(f,k,bool)));
+    optional(f,'cam_yaw_deg',Number.isFinite) && ['jump','interact','pulse','dash','pause'].every(k => optional(f,k,bool)));
 }
 function loadFile(path, valid) {
   try {
@@ -44,16 +47,18 @@ function run(argv) {
     return Number(v);
   };
   const seed = number('--seed'), ticks = number('--ticks'), interval = number('--snapshot-every',10);
-  if (number('--night') !== 1 || ticks < 0 || interval < 1 || !args.get('--out')) throw Error('Invalid run parameters');
-  const scene = args.has('--scenario') ? loadFile(args.get('--scenario'),scenario) : {};
+  const night=number('--night');
+  if (![1,2,3].includes(night) || ticks < 0 || interval < 1 || !args.get('--out')) throw Error('Invalid run parameters');
+  const scene = args.has('--scenario') ? loadFile(args.get('--scenario'),s=>scenario(s,night)) : {};
   const frames = args.has('--inputs') ? loadFile(args.get('--inputs'),inputs).frames : [];
-  const game = new Night(tuning,seed,scene);
+  const game = new Night(tuning,seed,scene,night);
   const fd = fs.openSync(args.get('--out'),'w');
   const write = record => fs.writeSync(fd,JSON.stringify(record)+'\n');
   try {
     write(game.snapshot());
+    write({type:'event',tick:0,name:'night_start',data:{night}});
     let cursor = 0;
-    while (game.tick < ticks && game.state === 'playing') {
+    while (game.tick < ticks && ['playing','paused'].includes(game.state)) {
       const frame = frames[cursor]?.tick === game.tick ? frames[cursor++] : {};
       for (const event of game.step(frame)) write(event);
       if (game.tick % interval === 0) write(game.snapshot());

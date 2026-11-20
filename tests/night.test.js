@@ -30,18 +30,19 @@ test('inclusive pickup, capacity, partial deposit and held interact',()=>{
   assert.equal(partial.lanterns[0].lit,false);
 });
 test('pulse spends light, pushes, stuns and obeys cooldown',()=>{
-  const g=game({player:{carried:4},shades:[{id:'Ink',pos:[t.pulse_radius,1,0]}]});
+  const g=game({player:{carried:4},shades:[{id:'Ink',pos:[t.pulse_radius,.8,0]}]});
   assert.deepEqual(g.step({pulse:true})[0].data.stunned_ids,['Ink']);
-  assert.equal(g.shades[0].pos[0],t.pulse_radius+t.pulse_push_m);
+  for(let k=1;k<15;k++)g.step();
+  assert.ok(Math.abs(g.shades[0].pos[0]-t.pulse_radius-t.pulse_push_m)<1e-8);
   assert.equal(g.shades[0].state,'stunned');assert.equal(g.score,t.score.per_stun);
-  g.step({pulse:false});g.step({pulse:true});assert.equal(g.player.carried,3);
+  g.step({pulse:false});g.step({pulse:true});assert.equal(g.player.carried,1);
   while(g.tick<=t.pulse_stun_s*60)g.step();
   assert.equal(g.shades[0].state,'chase');
 });
 test('hit drops, invulnerability, shelter and both loss reasons',()=>{
   const g=game({player:{carried:5,flames:2},shades:[{pos:[0,1,0]}]});
   assert.deepEqual(g.step()[0].data,{by:'shade',flames:1,dropped:2});
-  for(let i=0;i<119;i++)g.step();
+  for(let i=0;i<89;i++)g.step();
   assert.equal(g.step().at(-1).data.reason,'no_flames');
   const safe=game({lanterns:[{id:'L1',pos:[0,0,0],lit:true}],shades:[{pos:[0,1,0]}]});
   safe.step();assert.equal(safe.player.flames,t.flames);assert.ok(safe.shades[0].pos[0]>=t.safe_radius);
@@ -57,7 +58,7 @@ test('official CLI writes deterministic snapshots, events and end; rejects inval
   const raw=fs.readFileSync(out,'utf8');
   const records=raw.trim().split('\n').map(JSON.parse);
   assert.equal(records[0].tick,0);assert.equal(records[0].score,0);
-  assert.deepEqual(records.filter(r=>r.type==='event').map(r=>[r.tick,r.name]),[[1,'mote_picked'],[2,'deposit'],[2,'lantern_lit'],[2,'game_over']]);
+  assert.deepEqual(records.filter(r=>r.type==='event').map(r=>[r.tick,r.name]),[[0,'night_start'],[1,'mote_picked'],[2,'deposit'],[2,'lantern_lit'],[2,'game_over']]);
   assert.deepEqual(records.at(-1),{type:'end',ticks:2,state:'won',score:378});
   assert.equal(run(...args).status,0);assert.equal(fs.readFileSync(out,'utf8'),raw);
   assert.equal(run().status,0);const seeded=fs.readFileSync(out,'utf8');

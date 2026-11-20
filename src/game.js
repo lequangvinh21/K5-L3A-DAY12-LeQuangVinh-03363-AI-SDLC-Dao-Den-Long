@@ -1,3 +1,6 @@
+import {benchmarkNight,benchmarkActors,frameMeter} from './benchmark.js';
+import {bindings,actionFor,keyName,prefs,accessibilityControls} from './preferences.js';
+import {scoresList,scoreForm} from './scores-ui.js';
 import * as THREE from 'three';
 import manifest from '../game.contract.json';
 import {maps,ground} from './maps.js';
@@ -113,7 +116,9 @@ function sync(objects,nodes,create,update) {
   for(const [id,node] of nodes) if(!ids.has(id)){scene.remove(node);nodes.delete(id);}
 }
 const keys=new Set(),actions=new Set(),drifterNodes=new Map(),charmNodes=new Map();
-const bindings={Space:'jump',KeyE:'interact',KeyF:'pulse',ShiftLeft:'dash',ShiftRight:'dash'};
+const params=new URLSearchParams(location.search),bench=params.has('bench');
+let campaignSeed=0,shadeNotice=null,actorBatch,benchStart;
+const meter=bench?frameMeter(Number(params.get('duration'))):null;
 let game,yaw=0,accumulator=0,last=performance.now(),pulseAt=-100,screen,total=0;
 let sensitivity=Number(localStorage.getItem('lantern-sensitivity')??1);
 let volume=Number(localStorage.getItem('lantern-volume')??.45);setVolume(volume);
@@ -122,20 +127,22 @@ const dialog=$('dialog');
 function panel(id,label,title,description,buttons){
   screen=id;keys.clear();actions.clear();$('#eyebrow').textContent=label;$('h1').textContent=title;
   $('dialog p').textContent=description;$('#controls').replaceChildren();$('#buttons').replaceChildren();
+  $('footer').textContent=[['forward','Tiến'],['back','Lùi'],['left','Trái'],['right','Phải'],['jump','Nhảy'],['dash','Lướt'],['interact','Nạp'],['pulse','Tỏa sáng'],['pause','Dừng']].map(([key,text])=>keyName(bindings[key])+' '+text).join(' · ');
   for(const [caption,action] of buttons){
     const b=document.createElement('button');b.textContent=caption;b.onclick=action;$('#buttons').append(b);
   }
   if(!dialog.open)dialog.showModal();
 }
 function start(n){
-  game=new Night(manifest.tuning,Math.floor(Math.random()*4294967296),{},n);
+  game=bench?benchmarkNight(manifest.tuning,Number(params.get('bench'))):new Night(manifest.tuning,campaignSeed+n-1,{},n);
+  shadeNotice=null;
   landscape(n);yaw=0;pulseAt=-100;last=performance.now();accumulator=0;
 }
 function intro(n){
   start(n);const words=['Giữ ít nhất ba đèn sáng tới bình minh. Đèn yếu cần châm dầu, Mây nhé.','Qua cầu tre, con sẽ tìm thấy bùa gió.','Theo dốc lên tháp chuông trước khi trời sáng.'];
   panel('intro','ÔNG ĐĂNG · ĐÊM '+n,maps[n].name,words[n-1],[['Vào đảo',()=>{unlock();screen='play';dialog.close();}]]);
 }
-function menu(){panel('menu','BIỂN MÂY · BA HÒN ĐẢO','Đảo Đèn Lồng','Cùng Mây giữ đèn sáng tới bình minh qua ba đêm giữa biển mây.',[['Bắt đầu',()=>{total=0;intro(1);}],['Cài đặt',()=>settings(menu)]]);}
+function menu(){panel('menu','BIỂN MÂY · BA HÒN ĐẢO','Đảo Đèn Lồng','Cùng Mây giữ đèn sáng tới bình minh qua ba đêm giữa biển mây.',[['Bắt đầu',()=>{total=0;campaignSeed=Math.floor(Math.random()*4294967296);intro(1);}],['Bảng xếp hạng',()=>{panel('scores','ĐIỂM CAO','Bảng xếp hạng','Top 10 trên máy này',[['Về menu',menu]]);scoresList($('#controls'));}],['Cài đặt',()=>settings(menu)]]);}
 function togglePause(){
   game.step({pause:false});game.step({pause:true});
 }
@@ -143,6 +150,7 @@ function resume(){togglePause();screen='play';dialog.close();}
 function pauseMenu(){panel('pause','ĐÊM '+game.night,'Tạm dừng',maps[game.night].name,[['Tiếp tục',resume],['Chơi lại Đêm',()=>intro(game.night)],['Cài đặt',()=>settings(pauseMenu)],['Về menu',menu]]);}
 function settings(back){
   panel('settings','TÙY CHỌN','Cài đặt','Kéo chuột trên đảo để xoay góc nhìn.',[['Trở về',back]]);
+  accessibilityControls($('#controls'));
   const option=document.createElement('label'),box=document.createElement('input');
   option.textContent='Bảng màu dễ phân biệt';box.type='checkbox';box.checked=accessible;
   box.onchange=()=>{accessible=box.checked;localStorage.setItem('lantern-accessible',String(accessible));
@@ -157,26 +165,29 @@ function settings(back){
 }
 dialog.addEventListener('cancel',e=>{e.preventDefault();if(screen==='pause')resume();});
 window.addEventListener('keydown',e=>{
-  if(e.code==='KeyP'||e.code==='Escape'){
+  if(e.target.matches('input,textarea')||screen==='settings')return;
+  if(e.code===bindings.pause||e.code==='Escape'){
     if(e.repeat)return;e.preventDefault();
     if(screen==='play'){game.step({pause:true});pauseMenu();}else if(screen==='pause')resume();return;
   }
   if(screen!=='play')return;
-  if(bindings[e.code]||['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyR'].includes(e.code)){e.preventDefault();keys.add(e.code);if(!e.repeat&&bindings[e.code])actions.add(bindings[e.code]);}
+  const action=actionFor(e.code);
+  if(action||['KeyQ','KeyR'].includes(e.code)){e.preventDefault();keys.add(e.code);if(!e.repeat&&action)actions.add(action);}
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();actions.clear();});
 renderer.domElement.addEventListener('pointermove',e=>{if(e.buttons===1&&screen==='play')yaw-=e.movementX*.25*sensitivity;});
 function step(){
   yaw+=(Number(keys.has('KeyQ'))-Number(keys.has('KeyR')))*1.5;
-  const frame={move:[Number(keys.has('KeyA'))-Number(keys.has('KeyD')),Number(keys.has('KeyW'))-Number(keys.has('KeyS'))],cam_yaw_deg:yaw,pause:false};
-  for(const action of Object.values(bindings))frame[action]=actions.has(action);
+  const frame={move:[Number(keys.has(bindings.left))-Number(keys.has(bindings.right)),Number(keys.has(bindings.forward))-Number(keys.has(bindings.back))],cam_yaw_deg:yaw,pause:false};
+  for(const action of ['jump','dash','interact','pulse'])frame[action]=actions.has(action);
   if(frame.jump&&game.player.grounded)cue('jump');actions.clear();
   for(const e of game.step(frame)){
-    cue(e.name);if(e.name==='pulse')pulseAt=game.sim;
+    cue(e.name);if(e.name==='shade_spawned')shadeNotice={pos:[...game.shades.find(s=>s.id===e.data.id).pos],until:game.sim+180};if(e.name==='pulse')pulseAt=game.sim;
     if(e.name==='game_over'){
       cue(game.state);const n=game.night,won=game.state==='won';if(won)total+=game.score;
       panel('result','ĐÊM '+n+' · '+maps[n].name,won?(n===3?'Bình Minh':'Đảo đón bình minh'):'Đêm đã khép lại',
         'Điểm Đêm '+game.score+' · Tổng điểm '+total,[[won?(n===3?'Về menu':'Đêm kế tiếp'):'Chơi lại Đêm',()=>won&&n===3?menu():intro(won?n+1:n)]]);
+      if(!won||n===3)scoreForm($('#controls'),{score:total,nights_won:won?3:n-1,seed:campaignSeed});
     }
   }
   if(game.sim%90===1)music();
@@ -188,29 +199,32 @@ const leaves=new THREE.Group();scene.add(leaves);
 for(let i=0;i<12;i++){const leaf=shape(leaves,sphere,trim);leaf.scale.set(.22,.04,.08);}
 function draw(now){
   accumulator+=Math.min((now-last)/1000,.2);last=now;
-  while(accumulator>=1/60){if(screen==='play')step();accumulator-=1/60;}
+  while(accumulator>=1/60){if(bench){game.sim++;for(const s of game.shades){game.wander(s);game.shelter(s);}}else if(screen==='play')step();accumulator-=1/60;}
   const p=game.player,[x,y,z]=p.pos,a=yaw*Math.PI/180;
   hero.position.set(x,y,z);hero.rotation.y=Math.atan2(game.face[0],game.face[1]);
-  camera.position.set(x-13*Math.sin(a),y+10,z-13*Math.cos(a));camera.lookAt(x+2*Math.sin(a),y+1,z+2*Math.cos(a));camera.updateMatrixWorld();
+  camera.position.set(x-13*Math.sin(a),y+10,z-13*Math.cos(a));camera.lookAt(x+2*Math.sin(a),y+1,z+2*Math.cos(a));if(bench){benchStart??=now;const orbit=(now-benchStart)*2*Math.PI/15000;camera.position.set(30*Math.cos(orbit),15,-30*Math.sin(orbit));camera.lookAt(0,0,0);}camera.updateMatrixWorld();
   sync(game.lanterns,lanternNodes,lamp,(node,l)=>{const u=node.userData,low=l.lit&&l.oil<manifest.tuning.low_fuel_threshold*60;
-    const on=!low || game.sim%60<30;
+    const on=prefs.reduced||!low || game.sim%60<30;
     u.paper.material=l.lit&&on?paper:dormant;u.paper.scale.y=l.lit?1:.8;
     u.tear.visible=!l.lit;u.tear.rotation.y=a+Math.PI;
     u.glow.visible=l.lit&&on;u.gauge.visible=l.lit&&on;u.gauge.quaternion.copy(camera.quaternion);
     const fraction=l.oil/(60*manifest.tuning.fuel_max);u.fill.scale.x=fraction;u.fill.position.x=(fraction-1)*.775;});
+  if(bench)actorBatch(camera);else {
   sync(game.motes,moteNodes,()=>{const node=shape(scene,sphere,gold);halo(node,8);return node;},(node,m)=>{
     node.position.y+=.8+.16*Math.sin(game.sim/24+Number(m.id.slice(1)));node.scale.setScalar(.22);
   });
   sync(game.shades,shadeNodes,()=>{const node=shape(scene,sphere,shadow);const edge=shape(node,sphere,outlineMaterial);edge.scale.setScalar(1.06);for(const x of [-.32,.32])shape(node,sphere,enemyAccent,x,.13,.88).scale.set(.12,.15,.09);return node;},(node,s)=>{
     node.rotation.y=Math.atan2(x-s.pos[0],z-s.pos[2]);node.scale.set(.85,1,.85);node.material=s.state==='stunned'?stunned:shadow;
   });
+  }
   sync(game.drifters,drifterNodes,()=>shape(scene,sphere,silk),node=>{node.scale.set(1.1,.18,.4);node.position.y+=1;});
   sync(game.charms,charmNodes,()=>{const node=shape(scene,new THREE.BoxGeometry(.6,.85,.12),trim);shape(node,new THREE.BoxGeometry(.51,.76,.15),red);return node;},(node,c)=>{node.visible=!c.left;node.position.y+=.7;});
-  leaves.visible=game.night===3&&(game.sim%1800>=1680||game.wind.active);
+  leaves.visible=!prefs.reduced&&game.night===3&&(game.sim%1800>=1680||game.wind.active);
   if(leaves.visible)leaves.children.forEach((leaf,i)=>leaf.position.set(x+(game.sim/10+i*2)%12-6,y+1+i%3,z+i%5-2));
   ring.visible=game.sim-pulseAt<20;ring.position.set(x,y+.2,z);ring.scale.setScalar(.1+5*Math.min(1,(game.sim-pulseAt)/20));
   const lit=game.lanterns.filter(l=>l.lit).length;
   sky.intensity=.15+.55*lit/game.lanterns.length;
+  if(!bench || game.sim===0 || !$('#night').textContent){
   $('#night').textContent='ĐÊM 0'+game.night+' · '+maps[game.night].name;$('#life').textContent='♥'.repeat(p.flames);
   const secs=Math.ceil(game.timeLeft);$('#clock').textContent=(accessible&&secs<=30?'⚠ ':'')+Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');$('#clock').classList.toggle('danger',secs<=30);
   $('#points').textContent=game.score+' điểm';$('#lights').textContent='◆ '+lit+'/'+game.lanterns.length+' · Mục tiêu '+Math.ceil(game.lanterns.length*manifest.tuning.win_ratio);
@@ -218,10 +232,27 @@ function draw(now){
   $('#cool').textContent='⇢ Lướt '+(p.dc&&!p.charm?(p.dc/60).toFixed(1)+'s':'✓')+'　✧ Tỏa sáng '+(p.pc?(p.pc/60).toFixed(1)+'s':'✓');
   const nearest=game.lanterns.filter(l=>!l.lit).sort((l,r)=>Math.hypot(l.pos[0]-x,l.pos[2]-z)-Math.hypot(r.pos[0]-x,r.pos[2]-z))[0];
   const target=game.interactionTarget();
-  $('#hint').textContent=target?(target.lit?'E — Châm dầu ('+Math.floor(target.oil/60)+'/100)':'E — Nạp ánh sáng ('+target.deposited+'/'+(target.ever_lit?5:10)+')'):p.charm?'Bùa Gió · '+Math.ceil(p.charm/60)+'s':'';
+  $('#hint').textContent=target?(target.lit?keyName(bindings.interact)+' — Châm dầu ('+Math.floor(target.oil/60)+'/100)':keyName(bindings.interact)+' — Nạp ánh sáng ('+target.deposited+'/'+(target.ever_lit?5:10)+')'):p.charm?'Bùa Gió · '+Math.ceil(p.charm/60)+'s':'';
   const arrow=$('#arrow');arrow.textContent='';
   if(nearest){const v=new THREE.Vector3(...nearest.pos).project(camera);
     if(Math.abs(v.x)>1||Math.abs(v.y)>1||v.z>1){arrow.textContent='➤ '+nearest.id;arrow.style.transform='rotate('+Math.atan2(-v.y*(v.z>1?-1:1),v.x*(v.z>1?-1:1))+'rad)';}}
-  renderer.render(scene,camera);requestAnimationFrame(draw);
+  const warnings=[];
+  const marker=$('#spawn-arrow');marker.hidden=true;
+  if(shadeNotice&&game.sim<shadeNotice.until){
+    warnings.push('Bóng Mực xuất hiện');const dx=shadeNotice.pos[0]-x,dz=shadeNotice.pos[2]-z;
+    const theta=Math.atan2(-(dx*Math.sin(a)+dz*Math.cos(a)),-dx*Math.cos(a)+dz*Math.sin(a));
+    marker.hidden=false;marker.style.left=(50+46*Math.cos(theta))+'%';marker.style.top=(50+42*Math.sin(theta))+'%';
+    marker.style.transform='translate(-50%,-50%) rotate('+theta+'rad)';
+  }
+  if(game.night===3&&game.sim%1800>=1680)warnings.push('Gió sắp thổi');
+  if(secs<=10)warnings.push('Bình minh trong '+secs+' giây');
+  const low=game.lanterns.filter(l=>l.lit&&l.oil<1800);if(low.length)warnings.push('Đèn sắp cạn dầu: '+low.map(l=>l.id).join(', '));
+  const notice=warnings.length?'⚠ '+warnings.join(' · '):'';
+  if($('#captions').textContent!==notice)$('#captions').textContent=notice;
+  }
+  renderer.render(scene,camera);if(bench)meter(now);requestAnimationFrame(draw);
 }
-start(1);menu();requestAnimationFrame(draw);
+start(1);
+if(bench){screen='bench';actorBatch=benchmarkActors(scene,game,sphere,{shadow,outline:outlineMaterial,eye:enemyAccent,gold},haloMat.map);}
+else menu();
+requestAnimationFrame(draw);

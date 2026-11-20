@@ -1,8 +1,8 @@
 {
-  "contract_version": "1.2",
+  "contract_version": "1.3",
   "team": "03363-LeQuangVinh",
-  "build_cmd": "npm ci",
-  "run_cmd": "npm run dev",
+  "build_cmd": "npm ci && npm run build",
+  "run_cmd": "node scripts/run.js",
   "headless_cmd": "node src/headless.js",
   "tuning": {
     "player_speed": 6,
@@ -47,5 +47,7 @@
     "drain_per_s": 5,
     "low_fuel_threshold": 30,
     "capacity_max": 20
-  }
+  },
+  "bench_cmd": "node scripts/bench.js",
+  "soak_cmd": "node --optimize-for-size --max-semi-space-size=1 scripts/soak.js"
 }

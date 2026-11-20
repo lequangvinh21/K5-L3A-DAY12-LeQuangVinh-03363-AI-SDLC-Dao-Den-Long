@@ -139,6 +139,21 @@ export class Night {
       this.emit('lantern_lit',{lantern_id:l.id,relight});
     }
   }
+  wander(s){
+    let weak=null,unlit=null,weakDistance=Infinity,unlitDistance=Infinity;
+    for(const lamp of this.lanterns){
+      if(this.safeLamp(lamp))continue;
+      const d=(s.pos[0]-lamp.pos[0])**2+(s.pos[2]-lamp.pos[2])**2;
+      // Lanterns are in increasing id order, so equal distances keep the first.
+      if(lamp.lit&&d<weakDistance){weak=lamp;weakDistance=d;}
+      if(!lamp.lit&&d<unlitDistance){unlit=lamp;unlitDistance=d;}
+    }
+    const target=weak??unlit;
+    if(target){
+      if(!weak||dist(s.pos,target.pos)>2)this.nudge(s,dir(s.pos,target.pos),Math.min(dist(s.pos,target.pos),1/hz));
+      if(weak&&dist(s.pos,weak.pos)<=2){s.state='drain';s.target=weak.id;s.drainTicks=0;}
+    }
+  }
   shelter(s){
     for(const l of this.lanterns)if(this.safeLamp(l) && dist(l.pos,s.pos)<6){
       const [x,z]=dir(l.pos,s.pos);s.pos[0]=l.pos[0]+6*x;s.pos[2]=l.pos[2]+6*z;
@@ -204,14 +219,7 @@ export class Night {
       else if(s.state!=='spawning' && s.justWoke!==this.sim){
         if(distance<=12)s.state='chase';else if(distance>18)s.state='wander';
         if(s.state==='chase')this.nudge(s,dir(s.pos,p.pos),Math.min(distance,(this.night===3?4.5:4)/hz));
-        else {
-          const weak=this.nearest(s.pos,this.lanterns.filter(l=>l.lit&&!this.safeLamp(l)));
-          const target=weak??this.nearest(s.pos,this.lanterns.filter(l=>!l.lit));
-          if(target){
-            if(!weak||dist(s.pos,target.pos)>2)this.nudge(s,dir(s.pos,target.pos),Math.min(dist(s.pos,target.pos),1/hz));
-            if(weak&&dist(s.pos,weak.pos)<=2){s.state='drain';s.target=weak.id;s.drainTicks=0;}
-          }
-        }
+        else this.wander(s);
       }
       this.shelter(s);
     }

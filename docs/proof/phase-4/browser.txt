@@ -1,0 +1,5 @@
+Chrome 157.0.8103.51 · 1280×720 · Windows
+Browser run completed without page errors.
+Verified conflicting key rejection, persisted movement remap, restore defaults, large text persistence, reduced motion selection, gameplay to loss, saving an entry, and reloading the leaderboard.
+Recording: v1.0.0/demo.mp4, 1280×720 H.264, 25 FPS, duration 50.64 s.
+Headless example: dawn.jsonl. Regression output: tests.tap. Full benchmark/soak output: bench.json and soak.json at repository root.

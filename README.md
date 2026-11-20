@@ -1,19 +1,23 @@
-# Đảo Đèn Lồng · Ba hòn đảo
+# Đảo Đèn Lồng · Bình minh v1.0.0
 
-Cùng Mây thắp đèn trên Đảo Bến, vượt cầu tre của Đảo Cau rồi leo tháp ở Đảo Chuông trước bình minh. Game web dùng Three.js, Node 22 và Test Contract v1.2.
+[Video demo MP4](https://github.com/lequangvinh21/K5-L3A-DAY12-LeQuangVinh-03363-AI-SDLC-Dao-Den-Long/releases/download/v1.0.0/demo.mp4) · [Bản chơi đã đóng gói](https://github.com/lequangvinh21/K5-L3A-DAY12-LeQuangVinh-03363-AI-SDLC-Dao-Den-Long/releases/tag/v1.0.0)
 
-![Mây trên Đảo Bến trong Phase 3](docs/proof/phase-3/gameplay.png)
+Cùng Mây thắp đèn trên Đảo Bến, vượt cầu tre của Đảo Cau rồi leo tháp ở Đảo Chuông trước bình minh. Game web dùng Three.js, Node 22 và Test Contract v1.3.
+
+![Mây trên Đảo Bến trong Phase 4](docs/proof/phase-4/gameplay.png)
 
 ### Cài và chơi
 
-Từ gốc repo trên macOS/Linux hoặc Windows:
+Cần Node.js 22, npm và trình duyệt hỗ trợ WebGL2 trên macOS/Linux hoặc Windows. Lệnh benchmark tự mở Google Chrome desktop đã cài. Có thể đặt CHROME_PATH trỏ đến Chromium. Để chơi từ clone sạch, chạy hai lệnh ở gốc repo:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-**WASD** di chuyển, **Space** nhảy, **Shift** lướt, **E** nạp đèn, **F** tỏa sáng. Kéo chuột hoặc dùng **Q/R** xoay camera. **P/Esc** tạm dừng. Từ menu chọn Bắt đầu, đọc lời Ông Đăng và chọn Vào đảo. Cài đặt âm lượng và độ nhạy được lưu trên trình duyệt.
+Bản ZIP trong Release đã build sẵn. Giải nén và chạy `node scripts/run.js` ngay trong thư mục đó. Trình duyệt mở địa chỉ local. Nếu cổng 5173 đang dùng, đặt biến PORT.
+
+**WASD** di chuyển, **Space** nhảy, **Shift** lướt, **E** nạp đèn, **F** tỏa sáng. Kéo chuột hoặc dùng **Q/R** xoay camera. **P/Esc** tạm dừng. Từ menu chọn Bắt đầu, đọc lời Ông Đăng và chọn Vào đảo. Trong Cài đặt có đổi phím, cảnh báo trùng phím, khôi phục mặc định, giảm chuyển động và chữ lớn. Những lựa chọn này cùng âm lượng, độ nhạy được lưu trong trình duyệt.
 
 **Mục tiêu:** giữ Mây còn lửa đến bình minh và giữ sáng ít nhất 3/5 đèn ở Đảo Bến, 4/6 ở Đảo Cau, 5/7 ở Đảo Chuông. Ba đêm lần lượt dài 240, 270 và 300 giây.
 
@@ -31,6 +35,22 @@ node src/headless.js --seed 73 --night 1 --scenario tests/oil-dawn.json --inputs
 CLI nhận Đêm 1–3. Scenario trên kiểm tra đèn tắt và thắp lại ở tick 1, thắng lúc bình minh ở tick 2 với 662 điểm. Trên Linux/macOS chạy `sh scripts/verify-phase3.sh` để tái tạo bộ bằng chứng headless. `npm run build` tạo bản web tĩnh ở `dist/`.
 
 [Contract](game.contract.json) · [Quyết định Phase 3](docs/notes/phase-3.md) · [Changelog](CHANGELOG.md) · [Bằng chứng Phase 3](docs/proof/phase-3/) · [Nguồn tài sản](CREDITS.md)
+
+### Kiểm chứng Phase 4
+
+Sau `npm ci` và `npm run build`, chạy trong cùng thư mục:
+
+```sh
+node scripts/bench.js --seed 42 --duration 30 --out bench.json
+node --optimize-for-size --max-semi-space-size=1 scripts/soak.js --seed 7 --nights 10 --out soak.json
+node scripts/run.js --export-leaderboard out.json
+```
+
+Benchmark dùng cửa sổ Chrome có viewport 1280×720, WebGL2, 200 Bóng Mực, 100 đom đóm và ba đèn dầu đầy. Bỏ 3 giây khởi động rồi đo khoảng cách giữa các khung rAF; Chrome được khởi chạy với `--disable-gpu-vsync` và `--disable-frame-rate-limit`. Trình duyệt không cung cấp RSS tổng hợp của các tiến trình renderer/GPU nên peak_mem_mb là null. Số đo trên máy phát triển ở [bench.json](bench.json); máy chấm do giảng viên công bố.
+
+Soak khởi tạo lần lượt Đêm 1/2/3 trong một tiến trình, bắt đầu với seed 7, chọn lại hướng mỗi 30 bước. Các tùy chọn V8 giới hạn vùng nhớ thế hệ trẻ để giảm RSS; phép đo dùng RSS thật. Xem [soak.json](soak.json), [bằng chứng Phase 4](docs/proof/phase-4/), [retro](docs/notes/retro.md) và [changelog](CHANGELOG.md).
+
+Sau khi thua hoặc thắng Đêm 3, nhập tên 3–12 ký tự chữ ASCII, số hoặc dấu gạch dưới. Bảng xếp hạng ở menu chính giữ 10 kết quả tốt nhất. Máy chủ local ghi `~/.dao-den-long/leaderboard.json`; đặt LANTERN_BOARD_FILE để dùng tệp khác khi kiểm thử. Lệnh export đọc đúng kho điểm này khi game đã đóng.
 
 ### Sáng tạo của tôi
 

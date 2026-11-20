@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: yaw, normalisation, retained input, jump edge and 60 Hz
+ok 1 - yaw, normalisation, retained input, jump edge and 60 Hz
+  ---
+  duration_ms: 2.09893
+  type: 'test'
+  ...
+# Subtest: inclusive pickup, capacity, partial deposit and held interact
+ok 2 - inclusive pickup, capacity, partial deposit and held interact
+  ---
+  duration_ms: 0.453827
+  type: 'test'
+  ...
+# Subtest: pulse spends light, pushes, stuns and obeys cooldown
+ok 3 - pulse spends light, pushes, stuns and obeys cooldown
+  ---
+  duration_ms: 1.217228
+  type: 'test'
+  ...
+# Subtest: hit drops, invulnerability, shelter and both loss reasons
+ok 4 - hit drops, invulnerability, shelter and both loss reasons
+  ---
+  duration_ms: 1.674921
+  type: 'test'
+  ...
+# Subtest: official CLI writes deterministic snapshots, events and end; rejects invalid files
+ok 5 - official CLI writes deterministic snapshots, events and end; rejects invalid files
+  ---
+  duration_ms: 1161.682394
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1453.977453

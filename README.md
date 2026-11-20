@@ -1,4 +1,45 @@
-# Day 12 — AI SDLC: Đảo Đèn Lồng
+# Đảo Đèn Lồng · Đêm 1 — Đảo Bến
+
+Điều khiển Mây trên đảo tròn giữa biển mây, gom đom đóm vàng và mang về thắp cả năm Đèn Lồng Lớn trước bình minh. Bóng Mực đuổi theo Mây. Khi hết ba ngọn lửa hoặc hết giờ, đêm kết thúc.
+
+![Đảo Bến trong game](docs/proof/phase-1/gameplay.png)
+
+### Cài và chơi
+
+Từ gốc repo trên macOS/Linux hoặc Windows, dùng Node.js 22 và npm. Chạy hai lệnh dưới đây rồi mở địa chỉ Vite in ra nếu trình duyệt chưa tự mở.
+
+```sh
+npm ci
+npm run dev
+```
+
+| Phím | Thao tác |
+|---|---|
+| W / A / S / D | Di chuyển theo camera. Đến gần đom đóm để tự nhặt, tối đa 8 con. |
+| Q / R | Xoay camera quanh Mây. |
+| Space | Nhảy. |
+| E | Nạp đốm đang mang vào đèn gần nhất. Mỗi đèn cần 4 đốm, có thể nạp nhiều lần. |
+| F | Dùng 1 đốm để đẩy lùi và làm choáng các Bóng Mực trong 6 m. |
+| Chơi lại | Nút xuất hiện sau khi thắng hoặc thua. |
+
+**Điểm số.** Mỗi đốm nhặt được +10, mỗi đèn thắp +100, mỗi Bóng Mực trúng một lần tỏa sáng +15. Khi thắng, cộng 2 điểm cho mỗi giây nguyên còn lại và 50 điểm cho mỗi ngọn lửa còn lại. Đèn đã sáng bảo vệ Mây trong bán kính 4 m. Mép đảo chặn di chuyển.
+
+### Kiểm thử và headless
+
+```sh
+npm test
+node src/headless.js --seed 7 --night 1 --scenario tests/last-light.json --inputs tests/deposit.json --ticks 65 --snapshot-every 1 --out result.jsonl
+```
+
+Ví dụ trên đặt sẵn bốn đèn sáng và một đèn thiếu một đốm. Tick 1 nhặt đốm, tick 2 nạp vào L5, thắng với 378 điểm. Có thể bỏ hai tham số file để chạy màn mặc định. Dùng `npm run build` để tạo bản web tĩnh trong `dist/`.
+
+[Contract và tuning](game.contract.json) · [Giả định và nhật ký AI](docs/notes/phase-1.md) · [Kết quả test Linux](docs/proof/phase-1/tests-linux.tap) · [Output CLI mẫu](docs/proof/phase-1/last-light.jsonl) · [Nguồn tài sản](CREDITS.md)
+
+### Sáng tạo của tôi
+
+Đom đóm có quầng vàng lơ lửng, nón lá của Mây treo một đèn nhỏ và màu trời đổi dần theo số đèn được thắp. Các hiệu ứng này nằm trong renderer. Ảnh phía trên ghi màn chơi thật, bộ test kiểm tra lại tính tất định của mô phỏng qua CLI.
+
+## Tài liệu gốc của lab
 
 > **Cá nhân** (1 người / 1 MSSV) · Áp dụng SDLC cùng AI để xây một **game 3D** qua **4 phase**, từ yêu cầu ban đầu tới bản phát hành.
 > **Lab board + trợ giảng:** **[Đảo Đèn Lồng Lab](https://claude.ai/artifact/Q1RYyv1dxjUczzCbd2ZnoW)**

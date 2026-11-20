@@ -1,0 +1,25 @@
+{
+  "platform": "linux",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-1355U",
+  "node": "v22.15.0",
+  "args": [
+    "src/headless.js",
+    "--night",
+    "3",
+    "--seed",
+    "73",
+    "--ticks",
+    "18000",
+    "--scenario",
+    "docs/proof/phase-2/benchmark-scene.json",
+    "--out",
+    "/tmp/dao-benchmark-jEmIVn/full.jsonl"
+  ],
+  "seconds": 0.325302141,
+  "end": {
+    "type": "end",
+    "ticks": 18000,
+    "state": "lost",
+    "score": 0
+  }
+}

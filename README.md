@@ -1,8 +1,8 @@
 # Đảo Đèn Lồng · Ba hòn đảo
 
-Cùng Mây thắp đèn trên Đảo Bến, vượt cầu tre của Đảo Cau rồi leo tháp ở Đảo Chuông trước bình minh. Game web dùng Three.js, Node 22 và Test Contract v1.1.
+Cùng Mây thắp đèn trên Đảo Bến, vượt cầu tre của Đảo Cau rồi leo tháp ở Đảo Chuông trước bình minh. Game web dùng Three.js, Node 22 và Test Contract v1.2.
 
-![Mây trên Đảo Bến trong Phase 2](docs/proof/phase-2/gameplay.png)
+![Mây trên Đảo Bến trong Phase 3](docs/proof/phase-3/gameplay.png)
 
 ### Cài và chơi
 
@@ -15,20 +15,22 @@ npm run dev
 
 **WASD** di chuyển, **Space** nhảy, **Shift** lướt, **E** nạp đèn, **F** tỏa sáng. Kéo chuột hoặc dùng **Q/R** xoay camera. **P/Esc** tạm dừng. Từ menu chọn Bắt đầu, đọc lời Ông Đăng và chọn Vào đảo. Cài đặt âm lượng và độ nhạy được lưu trên trình duyệt.
 
-Mỗi đèn cần 10 đốm, túi chứa 10. Tỏa sáng dùng 3 đốm. Đèn sáng bảo vệ Mây khỏi Bóng Mực trong 6 m. Gió Lạc có thể cướp đốm ở Đêm 2 và 3. Bùa Gió tăng tốc và bỏ hồi chiêu lướt trong 10 giây. Rơi khỏi đảo mất một lửa và toàn bộ đốm.
+**Mục tiêu:** giữ Mây còn lửa đến bình minh và giữ sáng ít nhất 3/5 đèn ở Đảo Bến, 4/6 ở Đảo Cau, 5/7 ở Đảo Chuông. Ba đêm lần lượt dài 240, 270 và 300 giây.
 
-**Tính điểm** mỗi đốm nạp +10, đèn sáng +100, mỗi Bóng Mực bị trúng tỏa sáng +5. Khi thắng cộng 2 điểm mỗi giây nguyên còn lại và 50 điểm mỗi lửa. Bình Minh hiển thị tổng điểm các đêm thắng.
+Nhấn **E** để nạp đèn tắt hoặc châm dầu cho đèn sáng. Lần đầu cần 10 đốm, thắp lại cần 5. Đèn mới thắp có 100 dầu, hao 1 mỗi giây. Một đốm châm thêm 10 dầu. Dưới 30 dầu, đèn nhấp nháy và mất vòng bảo vệ 6 m. Bóng Mực hút thêm 5 dầu mỗi giây mỗi con. Túi bắt đầu ở 10, tăng 2 mỗi lần thắp thành công, tối đa 20. Trong Cài đặt có **Bảng màu dễ phân biệt**, được lưu giữa các lần mở game.
+
+**Điểm:** mỗi đốm nạp +5, thắp lần đầu +100, thắp lại +40. Mỗi Bóng Mực trúng tỏa sáng +5, hoặc +15 nếu nó đang hút dầu. Khi thắng, mỗi đèn sáng được +50 cộng phần nguyên lượng dầu còn lại, mỗi ngọn lửa còn lại +50. Tổng điểm chỉ cộng các đêm thắng.
 
 ### Kiểm thử
 
 ```sh
 npm test
-node src/headless.js --seed 73 --night 2 --scenario tests/phase2-bridge.json --inputs tests/phase2-actions.json --ticks 25 --snapshot-every 1 --out result.jsonl
+node src/headless.js --seed 73 --night 1 --scenario tests/oil-dawn.json --inputs tests/oil-inputs.json --ticks 65 --snapshot-every 1 --out result.jsonl
 ```
 
-CLI nhận Đêm 1–3. Scenario trên kiểm tra nhặt bùa, Gió Lạc cướp/thả đốm, lướt và tạm dừng. Trên Linux/macOS chạy `sh scripts/verify-phase2.sh` để tái tạo bộ bằng chứng headless. `npm run build` tạo bản web tĩnh ở `dist/`.
+CLI nhận Đêm 1–3. Scenario trên kiểm tra đèn tắt và thắp lại ở tick 1, thắng lúc bình minh ở tick 2 với 662 điểm. Trên Linux/macOS chạy `sh scripts/verify-phase3.sh` để tái tạo bộ bằng chứng headless. `npm run build` tạo bản web tĩnh ở `dist/`.
 
-[Contract](game.contract.json) · [Tiêu chí và nhật ký Phase 2](docs/notes/phase-2.md) · [Bằng chứng Phase 2](docs/proof/phase-2/) · [Nguồn tài sản](CREDITS.md)
+[Contract](game.contract.json) · [Quyết định Phase 3](docs/notes/phase-3.md) · [Changelog](CHANGELOG.md) · [Bằng chứng Phase 3](docs/proof/phase-3/) · [Nguồn tài sản](CREDITS.md)
 
 ### Sáng tạo của tôi
 

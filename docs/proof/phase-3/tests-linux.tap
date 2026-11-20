@@ -1,0 +1,112 @@
+TAP version 13
+# Subtest: yaw, normalisation, retained input, jump edge and 60 Hz
+ok 1 - yaw, normalisation, retained input, jump edge and 60 Hz
+  ---
+  duration_ms: 3.496675
+  type: 'test'
+  ...
+# Subtest: inclusive pickup, capacity, partial deposit and held interact
+ok 2 - inclusive pickup, capacity, partial deposit and held interact
+  ---
+  duration_ms: 1.966015
+  type: 'test'
+  ...
+# Subtest: pulse spends light, pushes, stuns and obeys cooldown
+ok 3 - pulse spends light, pushes, stuns and obeys cooldown
+  ---
+  duration_ms: 4.599308
+  type: 'test'
+  ...
+# Subtest: hit drops, invulnerability, shelter and both loss reasons
+ok 4 - hit drops, invulnerability, shelter and both loss reasons
+  ---
+  duration_ms: 5.605479
+  type: 'test'
+  ...
+# Subtest: official CLI writes deterministic snapshots, events and end; rejects invalid files
+ok 5 - official CLI writes deterministic snapshots, events and end; rejects invalid files
+  ---
+  duration_ms: 692.111902
+  type: 'test'
+  ...
+# Subtest: three maps, spawn rings, schedule, wind and timer
+ok 6 - three maps, spawn rings, schedule, wind and timer
+  ---
+  duration_ms: 120.862909
+  type: 'test'
+  ...
+# Subtest: pause freezes sim, cooldowns, charm, schedule and time
+ok 7 - pause freezes sim, cooldowns, charm, schedule and time
+  ---
+  duration_ms: 0.512884
+  type: 'test'
+  ...
+# Subtest: charm refresh, fixed dash distance, airborne dash and delayed respawn
+ok 8 - charm refresh, fixed dash distance, airborne dash and delayed respawn
+  ---
+  duration_ms: 16.055721
+  type: 'test'
+  ...
+# Subtest: wind drifter steals before shade, pulse recovers stolen motes
+ok 9 - wind drifter steals before shade, pulse recovers stolen motes
+  ---
+  duration_ms: 2.271378
+  type: 'test'
+  ...
+# Subtest: jump pads, fall penalty through immunity and respawn
+ok 10 - jump pads, fall penalty through immunity and respawn
+  ---
+  duration_ms: 2.821744
+  type: 'test'
+  ...
+# Subtest: score on deposit only, no_flames precedes victory, victory precedes dawn
+ok 11 - score on deposit only, no_flames precedes victory, victory precedes dawn
+  ---
+  duration_ms: 1.165664
+  type: 'test'
+  ...
+# Subtest: extinction precedes same-tick relight; capacity, score and pause
+ok 12 - extinction precedes same-tick relight; capacity, score and pause
+  ---
+  duration_ms: 3.022074
+  type: 'test'
+  ...
+# Subtest: refuel ceilings and caps, nearest then lexical id, no initial credit
+ok 13 - refuel ceilings and caps, nearest then lexical id, no initial credit
+  ---
+  duration_ms: 8.509606
+  type: 'test'
+  ...
+# Subtest: 60 active drain ticks stack exactly with passive burn and emit per shade
+ok 14 - 60 active drain ticks stack exactly with passive burn and emit per shade
+  ---
+  duration_ms: 3.303928
+  type: 'test'
+  ...
+# Subtest: pulse rewards drain at activation; safe threshold uses unrounded units
+ok 15 - pulse rewards drain at activation; safe threshold uses unrounded units
+  ---
+  duration_ms: 0.574706
+  type: 'test'
+  ...
+# Subtest: dawn quotas for all islands, no early win, flames have priority
+ok 16 - dawn quotas for all islands, no early win, flames have priority
+  ---
+  duration_ms: 0.943372
+  type: 'test'
+  ...
+# Subtest: wanderer selects nearest weak lamp and leaves drain on restored shelter
+ok 17 - wanderer selects nearest weak lamp and leaves drain on restored shelter
+  ---
+  duration_ms: 0.767138
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 855.521679

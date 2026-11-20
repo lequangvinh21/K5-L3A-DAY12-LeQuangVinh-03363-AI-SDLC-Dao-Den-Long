@@ -78,12 +78,25 @@ shape(hero,sphere,gold,.83,1.39).scale.set(.17,.23,.17);
 halo(hero,1.3,1.39).position.x=.83;
 shape(hero,cylinder(.54,.56,.19),material(0xc8102e),0,1.37);
 const lanternNodes = new Map(), moteNodes = new Map(), shadeNodes = new Map();
+let accessible=localStorage.getItem('lantern-accessible')==='true';
+document.body.classList.toggle('accessible',accessible);
+const enemyAccent=material(accessible?0x00b3ff:0x7a3cff,true);
+const outlineMaterial=enemyAccent.clone();outlineMaterial.side=THREE.BackSide;
+const gaugeBack=material(0x1b2350,true),gaugeFill=material(0xffe9b0,true);
 const dormant = material(0x5b5f6e),paper = material(0xffb347,true);
 function lamp() {
   const group = new THREE.Group();scene.add(group);
   shape(group,cylinder(.65,.9,.3),wood,0,.15);
   shape(group,cylinder(.12,.19,2.4),wood,0,1.4);
   group.userData.paper = shape(group,cylinder(.65,.55,1,8),dormant,0,2.8);
+  const torn=new THREE.BufferGeometry();
+  torn.setAttribute('position',new THREE.Float32BufferAttribute([-.20,.32,.61,-.09,-.14,.61,-.04,.20,.61, -.09,-.14,.61,.06,-.29,.61,-.04,.20,.61],3));
+  group.userData.tear=shape(group,torn,material(0x120a1a,true),0,2.8);
+  group.userData.tear.material.side=THREE.DoubleSide;
+  const gauge=new THREE.Group();group.add(gauge);gauge.position.y=4.12;
+  shape(gauge,new THREE.BoxGeometry(1.65,.22,.04),gaugeBack);
+  const fill=shape(gauge,new THREE.BoxGeometry(1.55,.13,.02),gaugeFill,0,0,.04);
+  group.userData.gauge=gauge;group.userData.fill=fill;
   group.userData.glow=halo(group,5,2.8);
   shape(group,sphere,material(0xffe9b0,true),0,2.8).scale.setScalar(.16);
   shape(group,new THREE.ConeGeometry(.94,.56,8),wood,0,3.55);
@@ -119,10 +132,10 @@ function start(n){
   landscape(n);yaw=0;pulseAt=-100;last=performance.now();accumulator=0;
 }
 function intro(n){
-  start(n);const words=['Mang đốm sáng về cho những chiếc đèn, Mây nhé.','Qua cầu tre, con sẽ tìm thấy bùa gió.','Theo dốc lên tháp chuông trước khi trời sáng.'];
+  start(n);const words=['Giữ ít nhất ba đèn sáng tới bình minh. Đèn yếu cần châm dầu, Mây nhé.','Qua cầu tre, con sẽ tìm thấy bùa gió.','Theo dốc lên tháp chuông trước khi trời sáng.'];
   panel('intro','ÔNG ĐĂNG · ĐÊM '+n,maps[n].name,words[n-1],[['Vào đảo',()=>{unlock();screen='play';dialog.close();}]]);
 }
-function menu(){panel('menu','BIỂN MÂY · BA HÒN ĐẢO','Đảo Đèn Lồng','Cùng Mây thắp lại ánh sáng qua ba đêm giữa biển mây.',[['Bắt đầu',()=>{total=0;intro(1);}],['Cài đặt',()=>settings(menu)]]);}
+function menu(){panel('menu','BIỂN MÂY · BA HÒN ĐẢO','Đảo Đèn Lồng','Cùng Mây giữ đèn sáng tới bình minh qua ba đêm giữa biển mây.',[['Bắt đầu',()=>{total=0;intro(1);}],['Cài đặt',()=>settings(menu)]]);}
 function togglePause(){
   game.step({pause:false});game.step({pause:true});
 }
@@ -130,6 +143,12 @@ function resume(){togglePause();screen='play';dialog.close();}
 function pauseMenu(){panel('pause','ĐÊM '+game.night,'Tạm dừng',maps[game.night].name,[['Tiếp tục',resume],['Chơi lại Đêm',()=>intro(game.night)],['Cài đặt',()=>settings(pauseMenu)],['Về menu',menu]]);}
 function settings(back){
   panel('settings','TÙY CHỌN','Cài đặt','Kéo chuột trên đảo để xoay góc nhìn.',[['Trở về',back]]);
+  const option=document.createElement('label'),box=document.createElement('input');
+  option.textContent='Bảng màu dễ phân biệt';box.type='checkbox';box.checked=accessible;
+  box.onchange=()=>{accessible=box.checked;localStorage.setItem('lantern-accessible',String(accessible));
+    document.body.classList.toggle('accessible',accessible);
+    enemyAccent.color.setHex(accessible?0x00b3ff:0x7a3cff);outlineMaterial.color.copy(enemyAccent.color);};
+  option.append(box);$('#controls').append(option);
   for(const [name,key,min,max,value,apply] of [['Âm lượng','volume',0,1,volume,v=>setVolume(volume=v)],['Độ nhạy chuột','sensitivity',.2,3,sensitivity,v=>sensitivity=v]]){
     const label=document.createElement('label'),input=document.createElement('input');label.textContent=name;
     input.type='range';input.min=min;input.max=max;input.step=.05;input.value=value;
@@ -156,7 +175,7 @@ function step(){
     cue(e.name);if(e.name==='pulse')pulseAt=game.sim;
     if(e.name==='game_over'){
       cue(game.state);const n=game.night,won=game.state==='won';if(won)total+=game.score;
-      panel('result','ĐÊM '+n+' · '+maps[n].name,won?(n===3?'Bình Minh':'Đảo đã sáng'):'Đêm đã khép lại',
+      panel('result','ĐÊM '+n+' · '+maps[n].name,won?(n===3?'Bình Minh':'Đảo đón bình minh'):'Đêm đã khép lại',
         'Điểm Đêm '+game.score+' · Tổng điểm '+total,[[won?(n===3?'Về menu':'Đêm kế tiếp'):'Chơi lại Đêm',()=>won&&n===3?menu():intro(won?n+1:n)]]);
     }
   }
@@ -173,12 +192,17 @@ function draw(now){
   const p=game.player,[x,y,z]=p.pos,a=yaw*Math.PI/180;
   hero.position.set(x,y,z);hero.rotation.y=Math.atan2(game.face[0],game.face[1]);
   camera.position.set(x-13*Math.sin(a),y+10,z-13*Math.cos(a));camera.lookAt(x+2*Math.sin(a),y+1,z+2*Math.cos(a));camera.updateMatrixWorld();
-  sync(game.lanterns,lanternNodes,lamp,(node,l)=>{node.userData.paper.material=l.lit?paper:dormant;node.userData.glow.visible=l.lit;});
+  sync(game.lanterns,lanternNodes,lamp,(node,l)=>{const u=node.userData,low=l.lit&&l.oil<manifest.tuning.low_fuel_threshold*60;
+    const on=!low || game.sim%60<30;
+    u.paper.material=l.lit&&on?paper:dormant;u.paper.scale.y=l.lit?1:.8;
+    u.tear.visible=!l.lit;u.tear.rotation.y=a+Math.PI;
+    u.glow.visible=l.lit&&on;u.gauge.visible=l.lit&&on;u.gauge.quaternion.copy(camera.quaternion);
+    const fraction=l.oil/(60*manifest.tuning.fuel_max);u.fill.scale.x=fraction;u.fill.position.x=(fraction-1)*.775;});
   sync(game.motes,moteNodes,()=>{const node=shape(scene,sphere,gold);halo(node,8);return node;},(node,m)=>{
     node.position.y+=.8+.16*Math.sin(game.sim/24+Number(m.id.slice(1)));node.scale.setScalar(.22);
   });
-  sync(game.shades,shadeNodes,()=>{const node=shape(scene,sphere,shadow);const edge=shape(node,sphere,material(0x7a3cff));edge.scale.setScalar(1.06);edge.material.side=THREE.BackSide;return node;},(node,s)=>{
-    node.scale.set(.85,1,.85);node.material=s.state==='stunned'?stunned:shadow;
+  sync(game.shades,shadeNodes,()=>{const node=shape(scene,sphere,shadow);const edge=shape(node,sphere,outlineMaterial);edge.scale.setScalar(1.06);for(const x of [-.32,.32])shape(node,sphere,enemyAccent,x,.13,.88).scale.set(.12,.15,.09);return node;},(node,s)=>{
+    node.rotation.y=Math.atan2(x-s.pos[0],z-s.pos[2]);node.scale.set(.85,1,.85);node.material=s.state==='stunned'?stunned:shadow;
   });
   sync(game.drifters,drifterNodes,()=>shape(scene,sphere,silk),node=>{node.scale.set(1.1,.18,.4);node.position.y+=1;});
   sync(game.charms,charmNodes,()=>{const node=shape(scene,new THREE.BoxGeometry(.6,.85,.12),trim);shape(node,new THREE.BoxGeometry(.51,.76,.15),red);return node;},(node,c)=>{node.visible=!c.left;node.position.y+=.7;});
@@ -188,12 +212,13 @@ function draw(now){
   const lit=game.lanterns.filter(l=>l.lit).length;
   sky.intensity=.15+.55*lit/game.lanterns.length;
   $('#night').textContent='ĐÊM 0'+game.night+' · '+maps[game.night].name;$('#life').textContent='♥'.repeat(p.flames);
-  const secs=Math.ceil(game.timeLeft);$('#clock').textContent=Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');$('#clock').classList.toggle('danger',secs<=30);
-  $('#points').textContent=game.score+' điểm';$('#lights').textContent='◆ '+lit+'/'+game.lanterns.length;
-  $('#bag').textContent='▰'.repeat(p.carried)+'▱'.repeat(10-p.carried);
+  const secs=Math.ceil(game.timeLeft);$('#clock').textContent=(accessible&&secs<=30?'⚠ ':'')+Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');$('#clock').classList.toggle('danger',secs<=30);
+  $('#points').textContent=game.score+' điểm';$('#lights').textContent='◆ '+lit+'/'+game.lanterns.length+' · Mục tiêu '+Math.ceil(game.lanterns.length*manifest.tuning.win_ratio);
+  $('#bag').textContent='▰'.repeat(p.carried)+'▱'.repeat(Math.max(0,game.capacity-p.carried))+' '+p.carried+'/'+game.capacity;
   $('#cool').textContent='⇢ Lướt '+(p.dc&&!p.charm?(p.dc/60).toFixed(1)+'s':'✓')+'　✧ Tỏa sáng '+(p.pc?(p.pc/60).toFixed(1)+'s':'✓');
   const nearest=game.lanterns.filter(l=>!l.lit).sort((l,r)=>Math.hypot(l.pos[0]-x,l.pos[2]-z)-Math.hypot(r.pos[0]-x,r.pos[2]-z))[0];
-  $('#hint').textContent=nearest&&Math.hypot(nearest.pos[0]-x,nearest.pos[2]-z)<=2?'E — Nạp ánh sáng ('+nearest.deposited+'/10)':p.charm?'Bùa Gió · '+Math.ceil(p.charm/60)+'s':'';
+  const target=game.interactionTarget();
+  $('#hint').textContent=target?(target.lit?'E — Châm dầu ('+Math.floor(target.oil/60)+'/100)':'E — Nạp ánh sáng ('+target.deposited+'/'+(target.ever_lit?5:10)+')'):p.charm?'Bùa Gió · '+Math.ceil(p.charm/60)+'s':'';
   const arrow=$('#arrow');arrow.textContent='';
   if(nearest){const v=new THREE.Vector3(...nearest.pos).project(camera);
     if(Math.abs(v.x)>1||Math.abs(v.y)>1||v.z>1){arrow.textContent='➤ '+nearest.id;arrow.style.transform='rotate('+Math.atan2(-v.y*(v.z>1?-1:1),v.x*(v.z>1?-1:1))+'rad)';}}

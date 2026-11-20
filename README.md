@@ -1,43 +1,38 @@
-# Đảo Đèn Lồng · Đêm 1 — Đảo Bến
+# Đảo Đèn Lồng · Ba hòn đảo
 
-Điều khiển Mây trên đảo tròn giữa biển mây, gom đom đóm vàng và mang về thắp cả năm Đèn Lồng Lớn trước bình minh. Bóng Mực đuổi theo Mây. Khi hết ba ngọn lửa hoặc hết giờ, đêm kết thúc.
+Cùng Mây thắp đèn trên Đảo Bến, vượt cầu tre của Đảo Cau rồi leo tháp ở Đảo Chuông trước bình minh. Game web dùng Three.js, Node 22 và Test Contract v1.1.
 
-![Đảo Bến trong game](docs/proof/phase-1/gameplay.png)
+![Mây trên Đảo Bến trong Phase 2](docs/proof/phase-2/gameplay.png)
 
 ### Cài và chơi
 
-Từ gốc repo trên macOS/Linux hoặc Windows, dùng Node.js 22 và npm. Chạy hai lệnh dưới đây rồi mở địa chỉ Vite in ra nếu trình duyệt chưa tự mở.
+Từ gốc repo trên macOS/Linux hoặc Windows:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-| Phím | Thao tác |
-|---|---|
-| W / A / S / D | Di chuyển theo camera. Đến gần đom đóm để tự nhặt, tối đa 8 con. |
-| Q / R | Xoay camera quanh Mây. |
-| Space | Nhảy. |
-| E | Nạp đốm đang mang vào đèn gần nhất. Mỗi đèn cần 4 đốm, có thể nạp nhiều lần. |
-| F | Dùng 1 đốm để đẩy lùi và làm choáng các Bóng Mực trong 6 m. |
-| Chơi lại | Nút xuất hiện sau khi thắng hoặc thua. |
+**WASD** di chuyển, **Space** nhảy, **Shift** lướt, **E** nạp đèn, **F** tỏa sáng. Kéo chuột hoặc dùng **Q/R** xoay camera. **P/Esc** tạm dừng. Từ menu chọn Bắt đầu, đọc lời Ông Đăng và chọn Vào đảo. Cài đặt âm lượng và độ nhạy được lưu trên trình duyệt.
 
-**Điểm số.** Mỗi đốm nhặt được +10, mỗi đèn thắp +100, mỗi Bóng Mực trúng một lần tỏa sáng +15. Khi thắng, cộng 2 điểm cho mỗi giây nguyên còn lại và 50 điểm cho mỗi ngọn lửa còn lại. Đèn đã sáng bảo vệ Mây trong bán kính 4 m. Mép đảo chặn di chuyển.
+Mỗi đèn cần 10 đốm, túi chứa 10. Tỏa sáng dùng 3 đốm. Đèn sáng bảo vệ Mây khỏi Bóng Mực trong 6 m. Gió Lạc có thể cướp đốm ở Đêm 2 và 3. Bùa Gió tăng tốc và bỏ hồi chiêu lướt trong 10 giây. Rơi khỏi đảo mất một lửa và toàn bộ đốm.
 
-### Kiểm thử và headless
+**Tính điểm** mỗi đốm nạp +10, đèn sáng +100, mỗi Bóng Mực bị trúng tỏa sáng +5. Khi thắng cộng 2 điểm mỗi giây nguyên còn lại và 50 điểm mỗi lửa. Bình Minh hiển thị tổng điểm các đêm thắng.
+
+### Kiểm thử
 
 ```sh
 npm test
-node src/headless.js --seed 7 --night 1 --scenario tests/last-light.json --inputs tests/deposit.json --ticks 65 --snapshot-every 1 --out result.jsonl
+node src/headless.js --seed 73 --night 2 --scenario tests/phase2-bridge.json --inputs tests/phase2-actions.json --ticks 25 --snapshot-every 1 --out result.jsonl
 ```
 
-Ví dụ trên đặt sẵn bốn đèn sáng và một đèn thiếu một đốm. Tick 1 nhặt đốm, tick 2 nạp vào L5, thắng với 378 điểm. Có thể bỏ hai tham số file để chạy màn mặc định. Dùng `npm run build` để tạo bản web tĩnh trong `dist/`.
+CLI nhận Đêm 1–3. Scenario trên kiểm tra nhặt bùa, Gió Lạc cướp/thả đốm, lướt và tạm dừng. Trên Linux/macOS chạy `sh scripts/verify-phase2.sh` để tái tạo bộ bằng chứng headless. `npm run build` tạo bản web tĩnh ở `dist/`.
 
-[Contract và tuning](game.contract.json) · [Giả định và nhật ký AI](docs/notes/phase-1.md) · [Kết quả test Linux](docs/proof/phase-1/tests-linux.tap) · [Output CLI mẫu](docs/proof/phase-1/last-light.jsonl) · [Nguồn tài sản](CREDITS.md)
+[Contract](game.contract.json) · [Tiêu chí và nhật ký Phase 2](docs/notes/phase-2.md) · [Bằng chứng Phase 2](docs/proof/phase-2/) · [Nguồn tài sản](CREDITS.md)
 
 ### Sáng tạo của tôi
 
-Đom đóm có quầng vàng lơ lửng, nón lá của Mây treo một đèn nhỏ và màu trời đổi dần theo số đèn được thắp. Các hiệu ứng này nằm trong renderer. Ảnh phía trên ghi màn chơi thật, bộ test kiểm tra lại tính tất định của mô phỏng qua CLI.
+Quầng đom đóm và chiếc đèn treo bên nón lá được dựng thủ tục. Renderer đọc trạng thái từ cùng lõi với CLI. Ảnh trên và bộ test tái lập cùng seed là bằng chứng tương ứng.
 
 ## Tài liệu gốc của lab
 

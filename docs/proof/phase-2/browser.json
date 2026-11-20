@@ -1,0 +1,17 @@
+{
+  "browser": "157.0.8103.51",
+  "fps": 34.28753687903676,
+  "frames": 173,
+  "width": 1280,
+  "height": 720,
+  "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "checks": [
+    "menu",
+    "intro",
+    "saved volume after reload",
+    "pause freezes timer",
+    "resume",
+    "render HUD"
+  ],
+  "pageErrors": []
+}

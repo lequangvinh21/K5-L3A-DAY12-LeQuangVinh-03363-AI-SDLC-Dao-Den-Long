@@ -15,7 +15,7 @@ test('yaw, normalisation, retained input, jump edge and 60 Hz',()=>{
   assert.ok(Math.abs(g.player.pos[0]-t.player_speed)<1e-9);
   assert.ok(Math.abs(g.player.pos[2])<1e-9);
   assert.equal(g.player.pos[1],0);
-  assert.equal(g.timeLeft,299);
+  assert.equal(g.timeLeft,t.night1_duration_s-1);
   const diagonal=game();diagonal.step({move:[1,1]});
   assert.ok(Math.abs(Math.hypot(...diagonal.player.pos)-t.player_speed/60)<1e-9);
 });
@@ -37,7 +37,7 @@ test('pulse spends light, pushes, stuns and obeys cooldown',()=>{
   assert.equal(g.shades[0].state,'stunned');assert.equal(g.score,t.score.per_stun);
   g.step({pulse:false});g.step({pulse:true});assert.equal(g.player.carried,1);
   while(g.tick<=t.pulse_stun_s*60)g.step();
-  assert.equal(g.shades[0].state,'chase');
+  assert.equal(g.shades[0].state,'wander');g.step();assert.equal(g.shades[0].state,'chase');
 });
 test('hit drops, invulnerability, shelter and both loss reasons',()=>{
   const g=game({player:{carried:5,flames:2},shades:[{pos:[0,1,0]}]});
@@ -58,8 +58,8 @@ test('official CLI writes deterministic snapshots, events and end; rejects inval
   const raw=fs.readFileSync(out,'utf8');
   const records=raw.trim().split('\n').map(JSON.parse);
   assert.equal(records[0].tick,0);assert.equal(records[0].score,0);
-  assert.deepEqual(records.filter(r=>r.type==='event').map(r=>[r.tick,r.name]),[[0,'night_start'],[1,'mote_picked'],[2,'deposit'],[2,'lantern_lit'],[2,'game_over']]);
-  assert.deepEqual(records.at(-1),{type:'end',ticks:2,state:'won',score:378});
+  assert.deepEqual(records.filter(r=>r.type==='event').map(r=>[r.tick,r.name]),[[0,'night_start'],[1,'mote_picked'],[2,'deposit'],[2,'lantern_lit']]);
+  assert.deepEqual(records.at(-1),{type:'end',ticks:65,state:'playing',score:105});
   assert.equal(run(...args).status,0);assert.equal(fs.readFileSync(out,'utf8'),raw);
   assert.equal(run().status,0);const seeded=fs.readFileSync(out,'utf8');
   assert.equal(run().status,0);assert.equal(fs.readFileSync(out,'utf8'),seeded);

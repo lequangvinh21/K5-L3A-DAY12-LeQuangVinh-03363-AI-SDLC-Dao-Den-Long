@@ -11,16 +11,16 @@ const list = test => a => Array.isArray(a) && a.every(test);
 const unique = (a,key) => new Set(a.map(o => o[key])).size === a.length;
 function scenario(s,night) {
   return object(s) && optional(s,'player',p => object(p) && optional(p,'pos',v => vector(v,3)) &&
-    optional(p,'carried',uint) && optional(p,'flames',uint) && ['invuln_ticks','dash_cd_ticks','pulse_cd_ticks','charm_ticks'].every(k=>optional(p,k,uint))) &&
+    optional(p,'carried',uint) && optional(p,'flames',uint) && ['successful_lights','invuln_ticks','dash_cd_ticks','pulse_cd_ticks','charm_ticks'].every(k=>optional(p,k,uint))) &&
     optional(s,'time_left_s',v => Number.isFinite(v) && v >= 0) &&
     ['random_drifters','wind_enabled'].every(k=>optional(s,k,bool)) &&
     optional(s,'drifters',list(o=>object(o)&&vector(o.pos,3)&&optional(o,'state',v=>['idle','chase','flee'].includes(v))&&optional(o,'stolen',uint)&&optional(o,'state_ticks_left',uint))) &&
     optional(s,'charms',list(o=>object(o)&&optional(o,'pos',v=>vector(v,3))&&optional(o,'available',bool)&&optional(o,'respawn_ticks',uint))) &&
     optional(s,'random_motes',bool) && optional(s,'random_shades',bool) &&
     optional(s,'motes',list(v => vector(v,3))) &&
-    optional(s,'shades',a => list(o => object(o) && vector(o.pos,3) && optional(o,'state',v=>['spawning','wander','chase','recoil','stunned'].includes(v)) && optional(o,'state_ticks_left',uint) && optional(o,'id',v => typeof v === 'string' && v.length > 0))(a) && unique(a.filter(s => s.id),'id')) &&
+    optional(s,'shades',a => list(o => object(o) && vector(o.pos,3) && optional(o,'state',v=>['spawning','wander','chase','recoil','stunned','drain'].includes(v)) && optional(o,'state_ticks_left',uint) && optional(o,'target_lantern_id',v=>typeof v==='string') && optional(o,'id',v => typeof v === 'string' && v.length > 0))(a) && unique(a.filter(s => s.id),'id')) &&
     optional(s,'lanterns',a => list(o => object(o) && /^L[1-7]$/.test(o.id) && Number(o.id.slice(1))<=night+4 && optional(o,'pos',v => vector(v,3)) &&
-      optional(o,'lit',bool) && optional(o,'deposited',v => uint(v) && v <= tuning.lantern_cost))(a) && unique(a,'id'));
+      optional(o,'lit',bool) && optional(o,'ever_lit',bool) && optional(o,'fuel',v=>Number.isFinite(v)&&v>=0&&v<=tuning.fuel_max) && optional(o,'deposited',v => uint(v) && v <= tuning.lantern_cost))(a) && unique(a,'id'));
 }
 function inputs(o) {
   return object(o) && Array.isArray(o.frames) && o.frames.every((f,i) => object(f) && uint(f.tick) &&

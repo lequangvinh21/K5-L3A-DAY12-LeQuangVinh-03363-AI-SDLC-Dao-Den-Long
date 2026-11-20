@@ -21,7 +21,7 @@ test('three maps, spawn rings, schedule, wind and timer',()=>{
 test('pause freezes sim, cooldowns, charm, schedule and time',()=>{
   const g=scene({player:{charm_ticks:120,dash_cd_ticks:30}});
   assert.equal(g.step({pause:true})[0].name,'paused');steps(g,300);
-  assert.equal(g.sim,0);assert.equal(g.timeLeft,300);assert.equal(g.player.charm,120);
+  assert.equal(g.sim,0);assert.equal(g.timeLeft,tuning.night1_duration_s);assert.equal(g.player.charm,120);
   g.step({pause:false});assert.equal(g.step({pause:true})[0].name,'resumed');assert.equal(g.sim,1);
 });
 test('charm refresh, fixed dash distance, airborne dash and delayed respawn',()=>{
@@ -47,6 +47,6 @@ test('jump pads, fall penalty through immunity and respawn',()=>{
 });
 test('score on deposit only, no_flames precedes victory, victory precedes dawn',()=>{
   const won=scene({time_left_s:1/60,lanterns:maps[1].lamps.map((_,i)=>({id:'L'+(i+1),lit:true}))});
-  assert.equal(won.step().at(-1).data.reason,'all_lit');
+  assert.equal(won.step().at(-1).data.reason,'dawn_survived');
   const lost=scene({player:{flames:0},lanterns:won.lanterns});assert.equal(lost.step().at(-1).data.reason,'no_flames');
 });
